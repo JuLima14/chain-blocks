@@ -1,45 +1,42 @@
 import UIKit
 
-indirect enum AsyncOperation {
+
+public indirect enum Operation {
     case operation(() -> Future<UIImage?>)
-    case concat(AsyncOperation, AsyncOperation)
+    case concat(Operation, Operation)
     
-    static func evaluate(_ expression: AsyncOperation) -> Future<UIImage?> {
+    public static func evaluate(_ expression: Operation) -> Future<UIImage?> {
         switch expression {
         case let .operation(value):
             return value()
         case let .concat(value1, value2):
-            let promise = Promise<UIImage?>()
-            evaluate(value1).chained { (image: UIImage?) -> Future<UIImage?> in
+            return evaluate(value1).chained { (image: UIImage?) -> Future<UIImage?> in
+                let promise = Promise<UIImage?>()
                 if image == nil {
-                    let nextPromise = evaluate(value2)
-                    nextPromise.chained { (image) -> Future<UIImage?> in
+                    return evaluate(value2).chained { (image) -> Future<UIImage?> in
                         promise.resolve(with: image)
                         return promise
                     }
-                    return nextPromise
                 } else {
                     promise.resolve(with: image)
                     return promise
                 }
             }
-            
-            return promise
         }
     }
 }
 
 let validUrl = URL(string: "https://via.placeholder.co/150/24f355")!
-let validUrl1 = URL(string: "https://via.placeholder.com/151/24f355")!
+let validUrl1 = URL(string: "https://via.placeholder.co/151/24f355")!
 let validUrl2 = URL(string: "https://via.placeholder.com/152/24f355")!
 
-let operation1: AsyncOperation = .operation(download(validUrl))
-let operation2: AsyncOperation = .operation(download(validUrl1))
-let operation3: AsyncOperation = .operation(download(validUrl2))
+let op1: Operation = .operation(download(validUrl))
+let op2: Operation = .operation(download(validUrl1))
+let op3: Operation = .operation(download(validUrl2))
 
-let mainOperation: AsyncOperation = .concat(.concat(operation1, operation2), operation3)
+let mainOperation: Operation = .concat(.concat(op1, op2), op3)
 
-AsyncOperation.evaluate(mainOperation).observe {
+Operation.evaluate(mainOperation).observe {
     switch $0 {
     case let .success(image):
         print("imaged received \(String(describing: image))")

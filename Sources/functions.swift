@@ -2,10 +2,10 @@ import UIKit
 
 public func download(_ url: URL) -> () -> Future<UIImage?> {
     return {
+        print("executed \(url)")
         let promise = Promise<UIImage?>()
         
         let task = URLSession.shared.dataTask(with: url) { (data, response, error) in
-            print("executed task with: \(url)")
             if let data = data {
                 promise.resolve(with: UIImage(data: data))
             } else {
